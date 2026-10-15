@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="uk" class="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Трекер Звичок" />
+  <title>Трекер Звичок та Цілей</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      font-family: 'Inter', sans-serif;
+      overscroll-behavior-y: none;
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(156, 163, 175, 0.4);
+      border-radius: 9999px;
+    }
+    .check-anim {
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .check-anim:active {
+      transform: scale(0.85);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen pb-24 lg:pb-10 transition-colors duration-200">
+
+  <!-- ВЕРХНЯ НАВІГАЦІЯ (HEADER) -->
+  <header class="sticky top-0 z-30 backdrop-blur-md bg-white/85 dark:bg-slate-900/85 border-b border-slate-200 dark:border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+          <i class="ph-bold ph-check-square-offset text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-extrabold tracking-tight leading-none">Мій Трекер</h1>
+          <p id="currentDateText" class="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Завантаження дати...</p>
+        </div>
+      </div>
+
+      <!-- Кнопки дій у шапці -->
+      <div class="flex items-center gap-1.5 sm:gap-2">
+        <button onclick="openInstallHelpModal()" title="Як встановити на телефон" class="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 hover:bg-indigo-100 transition flex items-center gap-1.5 text-xs font-semibold">
+          <i class="ph-bold ph-device-mobile text-lg"></i>
+          <span class="hidden md:inline">На телефон</span>
+        </button>
+
+        <button onclick="openDataModal()" title="Налаштування та бекап" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+          <i class="ph-bold ph-gear text-lg"></i>
+        </button>
+
+        <button onclick="toggleTheme()" id="themeToggleBtn" title="Змінити тему" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+          <i id="themeIcon" class="ph-bold ph-moon text-lg"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ГОЛОВНИЙ КОНТЕЙНЕР -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 pt-5 space-y-6">
+
+    <!-- ВЕРХНІ КАРТКИ СТАТИСТИКИ (KPI) -->
+    <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <!-- Картка 1: Сьогоднішні звички -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span id="kpiDayLabel" class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Сьогодні</span>
+          <span class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <i class="ph-bold ph-calendar-check text-lg"></i>
+          </span>
+        </div>
+        <div class="mt-3">
+          <div class="flex items-baseline gap-2">
+            <span id="kpiTodayPercent" class="text-2xl sm:text-3xl font-extrabold">0%</span>
+            <span id="kpiTodayCount" class="text-xs text-slate-500 dark:text-slate-400 font-medium">0/0 звичок</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-2 overflow-hidden">
+            <div id="kpiTodayBar" class="h-full bg-indigo-600 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Картка 2: Загальний прогрес тижня -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">За тиждень</span>
+          <span class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <i class="ph-bold ph-trend-up text-lg"></i>
+          </span>
+        </div>
+        <div class="mt-3">
+          <div class="flex items-baseline gap-2">
+            <span id="kpiWeekPercent" class="text-2xl sm:text-3xl font-extrabold">0%</span>
+            <span id="kpiWeekCount" class="text-xs text-slate-500 dark:text-slate-400 font-medium">0 виконано</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-2 overflow-hidden">
+            <div id="kpiWeekBar" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Картка 3: Цілі на день -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Цілі дня</span>
+          <span class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <i class="ph-bold ph-target text-lg"></i>
+          </span>
+        </div>
+        <div class="mt-3">
+          <div class="flex items-baseline gap-2">
+            <span id="kpiGoalsPercent" class="text-2xl sm:text-3xl font-extrabold">0%</span>
+            <span id="kpiGoalsCount" class="text-xs text-slate-500 dark:text-slate-400 font-medium">0/0 закрито</span>
+          </div>
+          <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-2 overflow-hidden">
+            <div id="kpiGoalsBar" class="h-full bg-amber-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Картка 4: Найкраща звичка -->
+      <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Лідер тижня</span>
+          <span class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+            <i class="ph-bold ph-fire text-lg"></i>
+          </span>
+        </div>
+        <div class="mt-3">
+          <p id="kpiBestHabitName" class="text-sm sm:text-base font-bold truncate">Немає даних</p>
+          <p id="kpiBestHabitSub" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Додайте першу звичку</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ПЕРЕМИКАЧ ДНЯ ТИЖНЯ (Зручно для телефона) -->
+    <section class="bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+      <div class="flex items-center justify-between mb-2 px-1">
+        <span class="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Активний день для швидкої оцінки</span>
+        <button onclick="selectToday()" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Сьогодні</button>
+      </div>
+      <div id="daySelectorBar" class="grid grid-cols-7 gap-1.5">
+        <!-- Генерується через JS -->
+      </div>
+    </section>
+
+    <!-- ОСНОВНА СІТКА ДОДАТКУ -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+      <!-- ЛІВА КОЛОНКА (ЗВИЧКИ + ГРАФІК) - 7 колонок на ПК -->
+      <div class="lg:col-span-7 space-y-6">
+
+        <!-- СЕКЦІЯ: ТАБЛИЦЯ ЗВИЧОК -->
+        <section id="section-habits" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 class="text-lg font-bold flex items-center gap-2">
+                <i class="ph-bold ph-list-checks text-indigo-600 dark:text-indigo-400"></i>
+                Мої звички на тиждень
+              </h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Натискайте на кружечки, щоб відмітити виконання</p>
+            </div>
+
+            <button onclick="openHabitModal()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-semibold text-xs sm:text-sm flex items-center gap-1.5 shadow-sm shadow-indigo-500/20 transition">
+              <i class="ph-bold ph-plus text-base"></i>
+              <span>Нова звичка</span>
+            </button>
+          </div>
+
+          <!-- Фільтр категорій -->
+          <div id="categoryFilterBar" class="px-4 sm:px-5 py-2.5 bg-slate-50/70 dark:bg-slate-800/40 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <!-- Генерується через JS -->
+          </div>
+
+          <!-- Контейнер списку або порожнього стану -->
+          <div id="habitsContainer" class="divide-y divide-slate-100 dark:divide-slate-800/80">
+            <!-- Генерується через JS -->
+          </div>
+        </section>
+
+        <!-- СЕКЦІЯ: ДІАГРАМА ДОСЯГНЕНЬ ЗА ТИЖДЕНЬ -->
+        <section id="section-chart" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-4 sm:p-5">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h2 class="text-lg font-bold flex items-center gap-2">
+                <i class="ph-bold ph-chart-bar text-indigo-600 dark:text-indigo-400"></i>
+                Діаграма досягнень за тиждень
+              </h2>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Динаміка виконання звичок по днях (Пн – Нд)</p>
+            </div>
+
+            <!-- Перемикач виду графіка -->
+            <div class="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-slate-800">
+              <button id="btnChartBar" onclick="setChartType('bar')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400">
+                Стовпчики
+              </button>
+              <button id="btnChartWave" onclick="setChartType('wave')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-600 dark:text-slate-400">
+                Хвиля
+              </button>
+            </div>
+          </div>
+
+          <!-- Область графіка SVG -->
+          <div id="chartWrapper" class="w-full h-56 sm:h-64 relative flex items-center justify-center">
+            <!-- Генерується через JS -->
+          </div>
+        </section>
+
+      </div>
+
+      <!-- ПРАВА КОЛОНКА (ЦІЛІ НА ДЕНЬ) - 5 колонок на ПК -->
+      <div class="lg:col-span-5 space-y-6">
+        <section id="section-goals" class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div class="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800">
+            <div class="flex items-center justify-between mb-1">
+              <h2 class="text-lg font-bold flex items-center gap-2">
+                <i class="ph-bold ph-check-circle text-amber-500"></i>
+                Цілі та завдання на день
+              </h2>
+              <span id="goalsBadgeCount" class="px-2.5 py-0.5 text-xs font-bold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300">
+                0 / 0
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Записуйте фокус-завдання, які потрібно виконати сьогодні</p>
+
+            <!-- Форма швидкого додавання цілі -->
+            <form onsubmit="handleAddGoal(event)" class="mt-4 space-y-2.5">
+              <div class="flex gap-2">
+                <input
+                  id="goalInput"
+                  type="text"
+                  placeholder="Наприклад: Зробити звіт, купити фрукти..."
+                  class="flex-1 px-3.5 py-2.5 text-sm rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/90 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <button
+                  type="submit"
+                  class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-white font-semibold text-sm flex items-center gap-1 shrink-0 shadow-sm shadow-amber-500/20 transition"
+                >
+                  <i class="ph-bold ph-plus"></i>
+                  <span>Додати</span>
+                </button>
+              </div>
+
+              <!-- Вибір пріоритету -->
+              <div class="flex items-center justify-between text-xs pt-0.5">
+                <span class="text-slate-400 dark:text-slate-500 font-medium">Пріоритет:</span>
+                <div class="flex items-center gap-1.5">
+                  <button type="button" onclick="setGoalPriority('high')" id="prioBtn-high" class="px-2.5 py-1 rounded-lg border text-xs font-semibold transition">
+                    🔥 Терміново
+                  </button>
+                  <button type="button" onclick="setGoalPriority('medium')" id="prioBtn-medium" class="px-2.5 py-1 rounded-lg border text-xs font-semibold transition">
+                    ⚡ Важливо
+                  </button>
+                  <button type="button" onclick="setGoalPriority('low')" id="prioBtn-low" class="px-2.5 py-1 rounded-lg border text-xs font-semibold transition">
+                    🌱 Звичайний
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Список щоденних цілей -->
+          <div id="goalsListContainer" class="divide-y divide-slate-100 dark:divide-slate-800/80 max-h-[460px] overflow-y-auto">
+            <!-- Генерується через JS -->
+          </div>
+
+          <!-- Нижня панель очищення виконаних цілей -->
+          <div id="goalsFooter" class="hidden px-4 py-3 bg-slate-50 dark:bg-slate-800/40 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+            <span id="goalsDoneFooterText" class="text-slate-500 dark:text-slate-400">Виконано: 0</span>
+            <button onclick="clearCompletedGoals()" class="text-rose-600 dark:text-rose-400 font-semibold hover:underline">
+              Видалити завершені
+            </button>
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- НИЖНЯ НАВІГАЦІЯ ДЛЯ МОБІЛЬНИХ ТЕЛЕФОНІВ -->
+  <nav class="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-3 py-1.5 flex items-center justify-around">
+    <button onclick="scrollToSection('section-habits')" class="flex flex-col items-center py-1 px-3 rounded-xl text-indigo-600 dark:text-indigo-400">
+      <i class="ph-bold ph-list-checks text-xl"></i>
+      <span class="text-[11px] font-semibold mt-0.5">Звички</span>
+    </button>
+    <button onclick="scrollToSection('section-goals')" class="flex flex-col items-center py-1 px-3 rounded-xl text-slate-600 dark:text-slate-400">
+      <i class="ph-bold ph-target text-xl"></i>
+      <span class="text-[11px] font-semibold mt-0.5">Цілі дня</span>
+    </button>
+    <button onclick="openHabitModal()" class="flex items-center justify-center w-11 h-11 rounded-2xl bg-indigo-600 text-white shadow-md shadow-indigo-500/30 active:scale-95 transition">
+      <i class="ph-bold ph-plus text-xl"></i>
+    </button>
+    <button onclick="scrollToSection('section-chart')" class="flex flex-col items-center py-1 px-3 rounded-xl text-slate-600 dark:text-slate-400">
+      <i class="ph-bold ph-chart-bar text-xl"></i>
+      <span class="text-[11px] font-semibold mt-0.5">Графік</span>
+    </button>
+    <button onclick="openInstallHelpModal()" class="flex flex-col items-center py-1 px-3 rounded-xl text-slate-600 dark:text-slate-400">
+      <i class="ph-bold ph-download-simple text-xl"></i>
+      <span class="text-[11px] font-semibold mt-0.5">На телефон</span>
+    </button>
+  </nav>
+
+  <!-- МОДАЛЬНЕ ВІКНО: СТВОРЕННЯ / РЕДАГУВАННЯ ЗВИЧКИ -->
+  <div id="habitModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <h3 id="habitModalTitle" class="text-lg font-extrabold">Нова звичка</h3>
+        <button onclick="closeHabitModal()" class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleSaveHabit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Назва звички</label>
+          <input
+            id="habitNameInput"
+            type="text"
+            required
+            placeholder="Напр.: Читати 20 сторінок, Ранкова зарядка..."
+            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Категорія</label>
+            <select
+              id="habitCategorySelect"
+              class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="health">❤️ Здоров'я</option>
+              <option value="sport">💪 Спорт</option>
+              <option value="learning">📚 Розвиток</option>
+              <option value="work">💼 Робота</option>
+              <option value="other">✨ Інше</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Ціль (днів на тиждень)</label>
+            <select
+              id="habitTargetSelect"
+              class="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="7">7 днів (щодня)</option>
+              <option value="6">6 днів на тиждень</option>
+              <option value="5">5 днів (будні)</option>
+              <option value="4">4 дні на тиждень</option>
+              <option value="3">3 дні на тиждень</option>
+              <option value="2">2 дні на тиждень</option>
+              <option value="1">1 день на тиждень</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Вибір іконки (Емодзі) -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Іконка</label>
+          <div id="emojiPickerGrid" class="grid grid-cols-6 gap-2">
+            <!-- Генерується через JS -->
+          </div>
+        </div>
+
+        <!-- Вибір кольору -->
+        <div>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Колір маркера</label>
+          <div id="colorPickerGrid" class="flex items-center gap-2.5">
+            <!-- Генерується через JS -->
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2">
+          <button type="button" onclick="closeHabitModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-semibold">
+            Скасувати
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-md shadow-indigo-500/20">
+            Зберегти звичку
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНЕ ВІКНО: ЯК СКАЧАТИ І ВСТАНОВИТИ НА ТЕЛЕФОН -->
+  <div id="installHelpModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center">
+            <i class="ph-bold ph-device-mobile text-xl"></i>
+          </div>
+          <h3 class="text-lg font-extrabold">Як завантажити на телефон</h3>
+        </div>
+        <button onclick="closeInstallHelpModal()" class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+        Цей трекер працює автономно і зберігає всі ваші записи безпосередньо в пам'яті вашого телефона.
+      </p>
+
+      <!-- Кнопка прямого скачування файлу -->
+      <div class="p-4 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 border border-indigo-200 dark:border-indigo-800/80 space-y-3">
+        <div class="flex items-start gap-3">
+          <i class="ph-bold ph-file-html text-2xl text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5"></i>
+          <div>
+            <h4 class="text-sm font-bold text-indigo-950 dark:text-indigo-200">Крок 1: Завантажте автономний файл</h4>
+            <p class="text-xs text-indigo-800/80 dark:text-indigo-300/80 mt-0.5">
+              Натисніть кнопку нижче, щоб зберегти файл <b>HabitTracker.html</b> собі на телефон або комп'ютер.
+            </p>
+          </div>
+        </div>
+        <button onclick="downloadStandaloneApp()" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm">
+          <i class="ph-bold ph-download-simple text-base"></i>
+          <span>Завантажити файл трекера (.html)</span>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs sm:text-sm">
+        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800">
+          <p class="font-bold flex items-center gap-1.5 text-slate-900 dark:text-white mb-1">
+            <i class="ph-bold ph-android-logo text-emerald-500 text-base"></i>
+            Як відкрити на Android:
+          </p>
+          <ol class="list-decimal list-inside space-y-1 text-slate-600 dark:text-slate-300 text-xs">
+            <li>Відкрийте завантажений файл через браузер <b>Chrome</b>.</li>
+            <li>Натисніть меню <b>«⋮»</b> (три крапки вгорі праворуч).</li>
+            <li>Оберіть <b>«Додати на головний екран»</b> — з'явиться іконка як у звичайного додатка!</li>
+          </ol>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/70 dark:border-slate-800">
+          <p class="font-bold flex items-center gap-1.5 text-slate-900 dark:text-white mb-1">
+            <i class="ph-bold ph-apple-logo text-slate-700 dark:text-slate-200 text-base"></i>
+            Як відкрити на iPhone (iOS):
+          </p>
+          <ol class="list-decimal list-inside space-y-1 text-slate-600 dark:text-slate-300 text-xs">
+            <li>Збережіть файл у додаток <b>«Файли» (Files)</b> або відкрийте у <b>Safari</b>.</li>
+            <li>Натисніть кнопку <b>«Поділитися»</b> <i class="ph-bold ph-export"></i> внизу екрана.</li>
+            <li>Прогорніть вниз та виберіть <b>«На початковий екран»</b>.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="pt-1 flex justify-end">
+        <button onclick="closeInstallHelpModal()" class="px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs sm:text-sm font-bold">
+          Зрозуміло
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛЬНЕ ВІКНО: НАЛАШТУВАННЯ ДАНИХ ТА ОЧИЩЕННЯ -->
+  <div id="dataModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-extrabold flex items-center gap-2">
+          <i class="ph-bold ph-database text-indigo-600"></i>
+          Керування даними
+        </h3>
+        <button onclick="closeDataModal()" class="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500">
+          <i class="ph-bold ph-x text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-2.5">
+        <button onclick="resetWeekChecks()" class="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-3 text-left transition">
+          <div class="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+            <i class="ph-bold ph-arrows-counter-clockwise text-lg"></i>
+          </div>
+          <div>
+            <p class="text-sm font-bold">Почати новий тиждень</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Знімає всі прапорці за Пн-Нд, але зберігає список ваших звичок</p>
+          </div>
+        </button>
+
+        <button onclick="exportBackupJSON()" class="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-3 text-left transition">
+          <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <i class="ph-bold ph-download text-lg"></i>
+          </div>
+          <div>
+            <p class="text-sm font-bold">Зберегти резервну копію (JSON)</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Завантажити файл із вашими звичками та цілями на пристрій</p>
+          </div>
+        </button>
+
+        <label class="w-full p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60 flex items-center gap-3 text-left transition cursor-pointer">
+          <div class="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+            <i class="ph-bold ph-upload text-lg"></i>
+          </div>
+          <div>
+            <p class="text-sm font-bold">Відновити з резервної копії</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Завантажити раніше збережений файл .json</p>
+          </div>
+          <input type="file" accept=".json" onchange="importBackupJSON(event)" class="hidden" />
+        </label>
+
+        <button onclick="clearAllTrackerData()" class="w-full p-3.5 rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/40 dark:bg-rose-950/20 hover:bg-rose-100/60 flex items-center gap-3 text-left transition">
+          <div class="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+            <i class="ph-bold ph-trash text-lg"></i>
+          </div>
+          <div>
+            <p class="text-sm font-bold text-rose-600 dark:text-rose-400">Очистити абсолютно все (Чистий лист)</p>
+            <p class="text-xs text-rose-500/80">Видалити всі звички та цілі для заповнення з нуля</p>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- СПЛИВАЮЧЕ ПОВІДОМЛЕННЯ (TOAST) -->
+  <div id="toastBox" class="fixed bottom-20 lg:bottom-6 right-4 z-50 hidden items-center gap-2 px-4 py-3 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs sm:text-sm font-semibold shadow-xl">
+    <i class="ph-bold ph-check-circle text-emerald-400 dark:text-emerald-600 text-lg"></i>
+    <span id="toastText">Збережено</span>
+  </div>
+
+  <!-- СКРИПТ ЛОГІКИ ДОДАТКУ -->
+  <script>
+    // --- ДОВІДНИКИ ---
+    const DAYS = [
+      { id: 0, short: 'Пн', full: 'Понеділок' },
+      { id: 1, short: 'Вт', full: 'Вівторок' },
+      { id: 2, short: 'Ср', full: 'Середа' },
+      { id: 3, short: 'Чт', full: 'Четвер' },
+      { id: 4, short: 'Пт', full: "П'ятниця" },
+      { id: 5, short: 'Сб', full: 'Субота' },
+      { id: 6, short: 'Нд', full: 'Неділя' },
+    ];
+
+    const CATEGORIES = [
+      { id: 'all', name: 'Усі', emoji: '📋' },
+      { id: 'health', name: "Здоров'я", emoji: '❤️' },
+      { id: 'sport', name: 'Спорт', emoji: '💪' },
+      { id: 'learning', name: 'Розвиток', emoji: '📚' },
+      { id: 'work', name: 'Робота', emoji: '💼' },
+      { id: 'other', name: 'Інше', emoji: '✨' },
+    ];
+
+    const EMOJIS = ['💧', '🏃', '📚', '🧘', '🥗', '💤', '💻', '🇬🇧', '🎸', '💊', '🧹', '🎯'];
+
+    const COLORS = [
+      { id: 'indigo', hex: '#4f46e5', bg: 'bg-indigo-600', light: 'bg-indigo-50 dark:bg-indigo-950/60', text: 'text-indigo-600 dark:text-indigo-400' },
+      { id: 'emerald', hex: '#10b981', bg: 'bg-emerald-500', light: 'bg-emerald-50 dark:bg-emerald-950/60', text: 'text-emerald-600 dark:text-emerald-400' },
+      { id: 'rose', hex: '#f43f5e', bg: 'bg-rose-500', light: 'bg-rose-50 dark:bg-rose-950/60', text: 'text-rose-600 dark:text-rose-400' },
+      { id: 'amber', hex: '#f59e0b', bg: 'bg-amber-500', light: 'bg-amber-50 dark:bg-amber-950/60', text: 'text-amber-600 dark:text-amber-400' },
+      { id: 'sky', hex: '#0ea5e9', bg: 'bg-sky-500', light: 'bg-sky-50 dark:bg-sky-950/60', text: 'text-sky-600 dark:text-sky-400' },
+      { id: 'violet', hex: '#8b5cf6', bg: 'bg-violet-500', light: 'bg-violet-50 dark:bg-violet-950/60', text: 'text-violet-600 dark:text-violet-400' },
+    ];
+
+    // --- СТАН ДОДАТКУ (ПОВНІСТЮ ЧИСТИЙ ЗА ЗАМОВЧУВАННЯМ) ---
+    const STORAGE_KEYS = {
+      HABITS: 'ua_clean_tracker_habits_v1',
+      GOALS: 'ua_clean_tracker_goals_v1',
+      THEME: 'ua_clean_tracker_theme_v1'
+    };
+
+    function getTodayIndex() {
+      const d = new Date().getDay();
+      return d === 0 ? 6 : d - 1;
+    }
+
+    let state = {
+      habits: [],       // Порожній список для заповнення з нуля!
+      goals: [],        // Порожній список цілей!
+      selectedDay: getTodayIndex(),
+      activeCategory: 'all',
+      chartType: 'bar',
+      editingHabitId: null,
+      selectedEmoji: '💧',
+      selectedColor: 'indigo',
+      selectedGoalPriority: 'medium',
+      darkMode: false
+    };
+
+    // --- ІНІЦІАЛІЗАЦІЯ ---
+    window.addEventListener('DOMContentLoaded', () => {
+      loadFromStorage();
+      applyTheme();
+      updateHeaderDate();
+      setGoalPriority('medium');
+      renderAll();
+    });
+
+    function loadFromStorage() {
+      try {
+        const savedHabits = localStorage.getItem(STORAGE_KEYS.HABITS);
+        const savedGoals = localStorage.getItem(STORAGE_KEYS.GOALS);
+        const savedTheme = localStorage.getItem(STORAGE_KEYS.THEME);
+
+        if (savedHabits) state.habits = JSON.parse(savedHabits);
+        if (savedGoals) state.goals = JSON.parse(savedGoals);
+        if (savedTheme !== null) state.darkMode = JSON.parse(savedTheme);
+      } catch (e) {
+        console.error('Помилка читання LocalStorage', e);
+      }
+    }
+
+    function saveToStorage() {
+      try {
+        localStorage.setItem(STORAGE_KEYS.HABITS, JSON.stringify(state.habits));
+        localStorage.setItem(STORAGE_KEYS.GOALS, JSON.stringify(state.goals));
+        localStorage.setItem(STORAGE_KEYS.THEME, JSON.stringify(state.darkMode));
+      } catch (e) {
+        console.error('Помилка збереження LocalStorage', e);
+      }
+    }
+
+    function updateHeaderDate() {
+      const now = new Date();
+      const options = { weekday: 'long', day: 'numeric', month: 'long' };
+      const formatted = now.toLocaleDateString('uk-UA', options);
+      document.getElementById('currentDateText').textContent =
+        formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    }
+
+    // --- ТЕМА ---
+    function toggleTheme() {
+      state.darkMode = !state.darkMode;
+      applyTheme();
+      saveToStorage();
+      renderChart();
+    }
+
+    function applyTheme() {
+      const htmlEl = document.documentElement;
+      const iconEl = document.getElementById('themeIcon');
+      if (state.darkMode) {
+        htmlEl.classList.add('dark');
+        iconEl.className = 'ph-bold ph-sun text-lg text-amber-400';
+      } else {
+        htmlEl.classList.remove('dark');
+        iconEl.className = 'ph-bold ph-moon text-lg';
+      }
+    }
+
+    // --- ГОЛОВНИЙ РЕНДЕР ---
+    function renderAll() {
+      renderDaySelector();
+      renderCategories();
+      renderHabits();
+      renderGoals();
+      renderKPIs();
+      renderChart();
+    }
+
+    // --- 1. ПЕРЕМИКАЧ ДНІВ ---
+    function renderDaySelector() {
+      const container = document.getElementById('daySelectorBar');
+      const todayIdx = getTodayIndex();
+
+      container.innerHTML = DAYS.map(day => {
+        const isSelected = day.id === state.selectedDay;
+        const isToday = day.id === todayIdx;
+
+        // Скільки звичок виконано в цей день
+        const total = state.habits.length;
+        const done = state.habits.filter(h => h.completedDays[day.id]).length;
+
+        return `
+          <button
+            onclick="selectDay(${day.id})"
+            class="py-2 px-1 rounded-xl flex flex-col items-center justify-center transition border ${
+              isSelected
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm shadow-indigo-500/30'
+                : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 border-slate-200/60 dark:border-slate-800 hover:bg-slate-100'
+            }"
+          >
+            <span class="text-[11px] font-bold uppercase">${day.short}</span>
+            <span class="text-[10px] mt-0.5 opacity-80">${total > 0 ? `${done}/${total}` : '—'}</span>
+            ${isToday ? `<span class="w-1.5 h-1.5 rounded-full mt-1 ${isSelected ? 'bg-white' : 'bg-indigo-600'}"></span>` : `<span class="w-1.5 h-1.5 mt-1"></span>`}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectDay(dayIndex) {
+      state.selectedDay = dayIndex;
+      renderAll();
+    }
+
+    function selectToday() {
+      state.selectedDay = getTodayIndex();
+      renderAll();
+      showToast('Обрано сьогоднішній день');
+    }
+
+    // --- 2. КАТЕГОРІЇ ---
+    function renderCategories() {
+      const bar = document.getElementById('categoryFilterBar');
+      bar.innerHTML = CATEGORIES.map(cat => {
+        const active = state.activeCategory === cat.id;
+        return `
+          <button
+            onclick="setCategory('${cat.id}')"
+            class="px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
+              active
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700'
+            }"
+          >
+            <span>${cat.emoji}</span>
+            <span>${cat.name}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function setCategory(catId) {
+      state.activeCategory = catId;
+      renderCategories();
+      renderHabits();
+    }
+
+    // --- 3. СПИСОК ЗВИЧОК ТА СІТКА ТИЖНЯ ---
+    function renderHabits() {
+      const container = document.getElementById('habitsContainer');
+      const filtered = state.activeCategory === 'all'
+        ? state.habits
+        : state.habits.filter(h => h.category === state.activeCategory);
+
+      if (state.habits.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 sm:p-10 text-center space-y-3">
+            <div class="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto text-3xl">
+              🌱
+            </div>
+            <div class="max-w-xs mx-auto">
+              <h3 class="text-base font-bold">Ваш список звичок чистий</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Додайте свою першу щоденну звичку (наприклад: пити воду, читання або спорт), щоб почати відстеження.
+              </p>
+            </div>
+            <button
+              onclick="openHabitModal()"
+              class="mt-2 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs sm:text-sm shadow-sm"
+            >
+              <i class="ph-bold ph-plus"></i>
+              <span>Додати першу звичку</span>
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="p-8 text-center text-xs sm:text-sm text-slate-500">
+            У цій категорії ще немає звичок.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(habit => {
+        const colorObj = COLORS.find(c => c.id === habit.color) || COLORS[0];
+        const doneCount = habit.completedDays.filter(Boolean).length;
+        const target = habit.targetDays || 7;
+        const percent = Math.min(100, Math.round((doneCount / target) * 100));
+
+        const daysButtons = DAYS.map(d => {
+          const isChecked = habit.completedDays[d.id];
+          const isCurrentSelected = d.id === state.selectedDay;
+          return `
+            <button
+              onclick="toggleHabitDay('${habit.id}', ${d.id})"
+              title="${d.full}"
+              class="check-anim flex flex-col items-center py-1.5 rounded-xl border transition ${
+                isChecked
+                  ? `${colorObj.bg} text-white border-transparent shadow-xs`
+                  : isCurrentSelected
+                  ? 'border-indigo-400 dark:border-indigo-500 bg-indigo-50/40 dark:bg-indigo-950/30 text-slate-500'
+                  : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-400 hover:border-slate-300'
+              }"
+            >
+              <span class="text-[10px] font-bold uppercase">${d.short}</span>
+              <i class="ph-bold ${isChecked ? 'ph-check' : 'ph-minus'} text-xs mt-0.5"></i>
+            </button>
+          `;
+        }).join('');
+
+        return `
+          <div class="p-4 sm:p-5 hover:bg-slate-50/60 dark:hover:bg-slate-800/30 transition space-y-3">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-2xl ${colorObj.light} flex items-center justify-center text-xl shrink-0">
+                  ${habit.emoji || '✨'}
+                </div>
+                <div class="min-w-0">
+                  <h4 class="font-bold text-sm sm:text-base truncate">${escapeHtml(habit.name)}</h4>
+                  <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    <span>Ціль: <b>${doneCount}/${target}</b> дн.</span>
+                    <span>•</span>
+                    <span class="${colorObj.text} font-semibold">${percent}%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-1 shrink-0">
+                <button onclick="openHabitModal('${habit.id}')" title="Редагувати" class="p-2 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">
+                  <i class="ph-bold ph-pencil-simple text-sm"></i>
+                </button>
+                <button onclick="deleteHabit('${habit.id}')" title="Видалити" class="p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50">
+                  <i class="ph-bold ph-trash text-sm"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Сітка Пн-Нд -->
+            <div class="grid grid-cols-7 gap-1.5">
+              ${daysButtons}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleHabitDay(habitId, dayIndex) {
+      const habit = state.habits.find(h => h.id === habitId);
+      if (!habit) return;
+      habit.completedDays[dayIndex] = !habit.completedDays[dayIndex];
+      saveToStorage();
+      renderAll();
+    }
+
+    function deleteHabit(habitId) {
+      state.habits = state.habits.filter(h => h.id !== habitId);
+      saveToStorage();
+      renderAll();
+      showToast('Звичку видалено');
+    }
+
+    // --- 4. МОДАЛЬНЕ ВІКНО ЗВИЧКИ ---
+    function renderEmojiAndColorPickers() {
+      const emojiGrid = document.getElementById('emojiPickerGrid');
+      emojiGrid.innerHTML = EMOJIS.map(em => `
+        <button
+          type="button"
+          onclick="selectHabitEmoji('${em}')"
+          class="h-10 rounded-xl text-lg flex items-center justify-center border transition ${
+            state.selectedEmoji === em
+              ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/80 ring-2 ring-indigo-500/30'
+              : 'border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800'
+          }"
+        >
+          ${em}
+        </button>
+      `).join('');
+
+      const colorGrid = document.getElementById('colorPickerGrid');
+      colorGrid.innerHTML = COLORS.map(c => `
+        <button
+          type="button"
+          onclick="selectHabitColor('${c.id}')"
+          class="w-8 h-8 rounded-full ${c.bg} flex items-center justify-center text-white transition transform ${
+            state.selectedColor === c.id ? 'scale-110 ring-4 ring-slate-300 dark:ring-slate-700' : 'opacity-75 hover:opacity-100'
+          }"
+        >
+          ${state.selectedColor === c.id ? '<i class="ph-bold ph-check text-xs"></i>' : ''}
+        </button>
+      `).join('');
+    }
+
+    function selectHabitEmoji(emoji) {
+      state.selectedEmoji = emoji;
+      renderEmojiAndColorPickers();
+    }
+
+    function selectHabitColor(colorId) {
+      state.selectedColor = colorId;
+      renderEmojiAndColorPickers();
+    }
+
+    function openHabitModal(habitId = null) {
+      const modal = document.getElementById('habitModal');
+      const title = document.getElementById('habitModalTitle');
+      const nameInput = document.getElementById('habitNameInput');
+      const categorySelect = document.getElementById('habitCategorySelect');
+      const targetSelect = document.getElementById('habitTargetSelect');
+
+      if (habitId) {
+        const habit = state.habits.find(h => h.id === habitId);
+        if (!habit) return;
+        state.editingHabitId = habitId;
+        title.textContent = 'Редагувати звичку';
+        nameInput.value = habit.name;
+        categorySelect.value = habit.category;
+        targetSelect.value = String(habit.targetDays || 7);
+        state.selectedEmoji = habit.emoji || '💧';
+        state.selectedColor = habit.color || 'indigo';
+      } else {
+        state.editingHabitId = null;
+        title.textContent = 'Нова звичка';
+        nameInput.value = '';
+        categorySelect.value = 'health';
+        targetSelect.value = '7';
+        state.selectedEmoji = '💧';
+        state.selectedColor = 'indigo';
+      }
+
+      renderEmojiAndColorPickers();
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => nameInput.focus(), 100);
+    }
+
+    function closeHabitModal() {
+      const modal = document.getElementById('habitModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function handleSaveHabit(e) {
+      e.preventDefault();
+      const name = document.getElementById('habitNameInput').value.trim();
+      const category = document.getElementById('habitCategorySelect').value;
+      const targetDays = parseInt(document.getElementById('habitTargetSelect').value, 10) || 7;
+
+      if (!name) return;
+
+      if (state.editingHabitId) {
+        state.habits = state.habits.map(h =>
+          h.id === state.editingHabitId
+            ? { ...h, name, category, targetDays, emoji: state.selectedEmoji, color: state.selectedColor }
+            : h
+        );
+        showToast('Звичку оновлено');
+      } else {
+        state.habits.push({
+          id: 'hab_' + Date.now(),
+          name,
+          category,
+          targetDays,
+          emoji: state.selectedEmoji,
+          color: state.selectedColor,
+          completedDays: [false, false, false, false, false, false, false]
+        });
+        showToast('Нову звичку додано!');
+      }
+
+      saveToStorage();
+      closeHabitModal();
+      renderAll();
+    }
+
+    // --- 5. ЦІЛІ НА ДЕНЬ ---
+    function setGoalPriority(prio) {
+      state.selectedGoalPriority = prio;
+      const styles = {
+        high: { active: 'bg-rose-600 text-white border-rose-600', idle: 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400' },
+        medium: { active: 'bg-amber-500 text-white border-amber-500', idle: 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400' },
+        low: { active: 'bg-emerald-600 text-white border-emerald-600', idle: 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400' }
+      };
+
+      ['high', 'medium', 'low'].forEach(p => {
+        const btn = document.getElementById(`prioBtn-${p}`);
+        if (btn) {
+          btn.className = `px-2.5 py-1 rounded-lg border text-xs font-semibold transition ${
+            p === prio ? styles[p].active : styles[p].idle
+          }`;
+        }
+      });
+    }
+
+    function handleAddGoal(e) {
+      e.preventDefault();
+      const input = document.getElementById('goalInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      state.goals.unshift({
+        id: 'goal_' + Date.now(),
+        text,
+        completed: false,
+        priority: state.selectedGoalPriority
+      });
+
+      input.value = '';
+      saveToStorage();
+      renderGoals();
+      renderKPIs();
+      showToast('Ціль додано на сьогодні');
+    }
+
+    function toggleGoal(id) {
+      const g = state.goals.find(item => item.id === id);
+      if (!g) return;
+      g.completed = !g.completed;
+      saveToStorage();
+      renderGoals();
+      renderKPIs();
+    }
+
+    function deleteGoal(id) {
+      state.goals = state.goals.filter(item => item.id !== id);
+      saveToStorage();
+      renderGoals();
+      renderKPIs();
+    }
+
+    function clearCompletedGoals() {
+      state.goals = state.goals.filter(item => !item.completed);
+      saveToStorage();
+      renderGoals();
+      renderKPIs();
+      showToast('Завершені цілі очищено');
+    }
+
+    function renderGoals() {
+      const container = document.getElementById('goalsListContainer');
+      const badge = document.getElementById('goalsBadgeCount');
+      const footer = document.getElementById('goalsFooter');
+      const footerText = document.getElementById('goalsDoneFooterText');
+
+      const total = state.goals.length;
+      const done = state.goals.filter(g => g.completed).length;
+      badge.textContent = `${done} / ${total}`;
+
+      if (total === 0) {
+        footer.classList.add('hidden');
+        container.innerHTML = `
+          <div class="p-8 text-center space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-950/50 text-amber-500 flex items-center justify-center mx-auto text-2xl">
+              🎯
+            </div>
+            <h3 class="text-sm font-bold">Немає запланованих цілей на день</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
+              Напишіть у полі вище головні завдання, які хочете встигнути виконати сьогодні.
+            </p>
+          </div>
+        `;
+        return;
+      }
+
+      footer.classList.remove('hidden');
+      footerText.textContent = `Виконано: ${done} з ${total}`;
+
+      const prioBadges = {
+        high: '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300">🔥 Терміново</span>',
+        medium: '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300">⚡ Важливо</span>',
+        low: '<span class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300">🌱 Звичайний</span>'
+      };
+
+      container.innerHTML = state.goals.map(goal => `
+        <div class="p-3.5 sm:px-5 flex items-center justify-between gap-3 hover:bg-slate-50/70 dark:hover:bg-slate-800/30 transition">
+          <button
+            onclick="toggleGoal('${goal.id}')"
+            class="flex items-center gap-3 text-left flex-1 min-w-0"
+          >
+            <span class="w-6 h-6 rounded-lg flex items-center justify-center border transition shrink-0 ${
+              goal.completed
+                ? 'bg-emerald-500 border-emerald-500 text-white'
+                : 'border-slate-300 dark:border-slate-600'
+            }">
+              ${goal.completed ? '<i class="ph-bold ph-check text-xs"></i>' : ''}
+            </span>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium truncate ${goal.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''}">
+                ${escapeHtml(goal.text)}
+              </p>
+              <div class="mt-1">
+                ${prioBadges[goal.priority] || prioBadges.medium}
+              </div>
+            </div>
+          </button>
+
+          <button
+            onclick="deleteGoal('${goal.id}')"
+            class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 shrink-0"
+          >
+            <i class="ph-bold ph-trash text-sm"></i>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // --- 6. ВЕРХНЯ СТАТИСТИКА (KPI) ---
+    function renderKPIs() {
+      const totalHabits = state.habits.length;
+      const dayObj = DAYS[state.selectedDay];
+      document.getElementById('kpiDayLabel').textContent =
+        state.selectedDay === getTodayIndex() ? `Сьогодні (${dayObj.short})` : dayObj.full;
+
+      // Сьогоднішні звички
+      const doneToday = state.habits.filter(h => h.completedDays[state.selectedDay]).length;
+      const todayPercent = totalHabits > 0 ? Math.round((doneToday / totalHabits) * 100) : 0;
+      document.getElementById('kpiTodayPercent').textContent = `${todayPercent}%`;
+      document.getElementById('kpiTodayCount').textContent = `${doneToday}/${totalHabits} звичок`;
+      document.getElementById('kpiTodayBar').style.width = `${todayPercent}%`;
+
+      // За тиждень
+      const totalPossibleWeek = state.habits.reduce((acc, h) => acc + (h.targetDays || 7), 0);
+      const totalDoneWeek = state.habits.reduce((acc, h) => acc + h.completedDays.filter(Boolean).length, 0);
+      const weekPercent = totalPossibleWeek > 0 ? Math.min(100, Math.round((totalDoneWeek / totalPossibleWeek) * 100)) : 0;
+      document.getElementById('kpiWeekPercent').textContent = `${weekPercent}%`;
+      document.getElementById('kpiWeekCount').textContent = `${totalDoneWeek} відміток`;
+      document.getElementById('kpiWeekBar').style.width = `${weekPercent}%`;
+
+      // Щоденні цілі
+      const totalGoals = state.goals.length;
+      const doneGoals = state.goals.filter(g => g.completed).length;
+      const goalsPercent = totalGoals > 0 ? Math.round((doneGoals / totalGoals) * 100) : 0;
+      document.getElementById('kpiGoalsPercent').textContent = `${goalsPercent}%`;
+      document.getElementById('kpiGoalsCount').textContent = `${doneGoals}/${totalGoals} закрито`;
+      document.getElementById('kpiGoalsBar').style.width = `${goalsPercent}%`;
+
+      // Лідер тижня
+      const bestNameEl = document.getElementById('kpiBestHabitName');
+      const bestSubEl = document.getElementById('kpiBestHabitSub');
+      if (totalHabits === 0) {
+        bestNameEl.textContent = 'Немає звичок';
+        bestSubEl.textContent = 'Додайте першу звичку';
+      } else {
+        const sorted = [...state.habits].sort(
+          (a, b) => b.completedDays.filter(Boolean).length - a.completedDays.filter(Boolean).length
+        );
+        const top = sorted[0];
+        const topCount = top.completedDays.filter(Boolean).length;
+        bestNameEl.textContent = `${top.emoji || '✨'} ${top.name}`;
+        bestSubEl.textContent = `Виконано ${topCount} з ${top.targetDays || 7} днів`;
+      }
+    }
+
+    // --- 7. ДІАГРАМА ДОСЯГНЕНЬ ЗА ТИЖДЕНЬ (SVG) ---
+    function setChartType(type) {
+      state.chartType = type;
+      const btnBar = document.getElementById('btnChartBar');
+      const btnWave = document.getElementById('btnChartWave');
+
+      if (type === 'bar') {
+        btnBar.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400';
+        btnWave.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-600 dark:text-slate-400';
+      } else {
+        btnWave.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-white dark:bg-slate-900 shadow-sm text-indigo-600 dark:text-indigo-400';
+        btnBar.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-600 dark:text-slate-400';
+      }
+      renderChart();
+    }
+
+    function renderChart() {
+      const wrapper = document.getElementById('chartWrapper');
+      const totalHabits = state.habits.length;
+
+      const data = DAYS.map(d => {
+        const done = state.habits.filter(h => h.completedDays[d.id]).length;
+        const pct = totalHabits > 0 ? Math.round((done / totalHabits) * 100) : 0;
+        return { ...d, done, pct };
+      });
+
+      if (state.chartType === 'bar') {
+        wrapper.innerHTML = `
+          <div class="w-full h-full flex flex-col justify-between pt-4">
+            <div class="flex-1 grid grid-cols-7 gap-2 sm:gap-4 items-end px-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+              ${data.map(item => {
+                const isSelected = item.id === state.selectedDay;
+                return `
+                  <div onclick="selectDay(${item.id})" class="h-full flex flex-col items-center justify-end group cursor-pointer">
+                    <span class="text-[11px] font-bold mb-1 ${
+                      isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'
+                    }">${item.pct}%</span>
+                    <div class="w-full max-w-[38px] bg-slate-100 dark:bg-slate-800 rounded-t-xl h-36 flex items-end overflow-hidden p-0.5">
+                      <div
+                        class="w-full rounded-t-lg transition-all duration-500 ${
+                          isSelected
+                            ? 'bg-indigo-600 dark:bg-indigo-500'
+                            : 'bg-indigo-400/70 dark:bg-indigo-500/50 group-hover:bg-indigo-500'
+                        }"
+                        style="height: ${Math.max(item.pct, 4)}%"
+                      ></div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            <div class="grid grid-cols-7 gap-2 text-center pt-2">
+              ${data.map(item => `
+                <button onclick="selectDay(${item.id})" class="text-xs font-bold ${
+                  item.id === state.selectedDay ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500'
+                }">
+                  ${item.short}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      } else {
+        // Хвильовий SVG графік
+        const width = 560;
+        const height = 170;
+        const padX = 34;
+        const padY = 22;
+        const usableW = width - padX * 2;
+        const usableH = height - padY * 2;
+
+        const points = data.map((d, idx) => {
+          const x = padX + (idx / 6) * usableW;
+          const y = padY + usableH - (d.pct / 100) * usableH;
+          return { x, y, ...d };
+        });
+
+        const lineCoords = points.map(p => `${p.x},${p.y}`).join(' ');
+        const areaCoords = `${points[0].x},${height - padY} ` + lineCoords + ` ${points[6].x},${height - padY}`;
+
+        wrapper.innerHTML = `
+          <div class="w-full h-full flex flex-col justify-between">
+            <svg viewBox="0 0 ${width} ${height}" class="w-full h-48 overflow-visible">
+              <defs>
+                <linearGradient id="waveGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#6366f1" stop-opacity="0.45"/>
+                  <stop offset="100%" stop-color="#6366f1" stop-opacity="0.0"/>
+                </linearGradient>
+              </defs>
+              <polygon points="${areaCoords}" fill="url(#waveGrad)" />
+              <polyline fill="none" stroke="#6366f1" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" points="${lineCoords}" />
+              ${points.map(p => `
+                <g onclick="selectDay(${p.id})" class="cursor-pointer">
+                  <circle cx="${p.x}" cy="${p.y}" r="${p.id === state.selectedDay ? 6 : 4.5}" fill="${p.id === state.selectedDay ? '#4f46e5' : '#ffffff'}" stroke="#4f46e5" stroke-width="2.5" />
+                  <text x="${p.x}" y="${p.y - 10}" text-anchor="middle" font-size="11" font-weight="700" fill="${state.darkMode ? '#cbd5e1' : '#475569'}">${p.pct}%</text>
+                </g>
+              `).join('')}
+            </svg>
+            <div class="grid grid-cols-7 gap-2 text-center pt-1 border-t border-slate-100 dark:border-slate-800">
+              ${data.map(item => `
+                <button onclick="selectDay(${item.id})" class="text-xs font-bold ${
+                  item.id === state.selectedDay ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500'
+                }">
+                  ${item.short}
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // --- 8. КЕРУВАННЯ ДАНИМИ, ЕКСПОРТ ТА ЗАВАНТАЖЕННЯ ---
+    function openInstallHelpModal() {
+      const m = document.getElementById('installHelpModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeInstallHelpModal() {
+      const m = document.getElementById('installHelpModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function openDataModal() {
+      const m = document.getElementById('dataModal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function closeDataModal() {
+      const m = document.getElementById('dataModal');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function resetWeekChecks() {
+      state.habits = state.habits.map(h => ({
+        ...h,
+        completedDays: [false, false, false, false, false, false, false]
+      }));
+      saveToStorage();
+      closeDataModal();
+      renderAll();
+      showToast('Новий тиждень розпочато!');
+    }
+
+    function clearAllTrackerData() {
+      state.habits = [];
+      state.goals = [];
+      saveToStorage();
+      closeDataModal();
+      renderAll();
+      showToast('Усі записи очищено — чистий лист!');
+    }
+
+    function exportBackupJSON() {
+      const backup = {
+        exportedAt: new Date().toISOString(),
+        habits: state.habits,
+        goals: state.goals
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `habit-tracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Резервну копію завантажено');
+    }
+
+    function importBackupJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (Array.isArray(parsed.habits)) state.habits = parsed.habits;
+          if (Array.isArray(parsed.goals)) state.goals = parsed.goals;
+          saveToStorage();
+          closeDataModal();
+          renderAll();
+          showToast('Дані успішно відновлено!');
+        } catch (err) {
+          showToast('Помилка формату файлу');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Функція для завантаження самого HTML-додатка на телефон/ПК
+    function downloadStandaloneApp() {
+      const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Mii_Treker_Zvychok.html';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Файл трекера завантажено!');
+    }
+
+    // --- ДОПОМІЖНІ ФУНКЦІЇ ---
+    function scrollToSection(id) {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function showToast(message) {
+      const box = document.getElementById('toastBox');
+      const txt = document.getElementById('toastText');
+      txt.textContent = message;
+      box.classList.remove('hidden');
+      box.classList.add('flex');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => {
+        box.classList.add('hidden');
+        box.classList.remove('flex');
+      }, 2600);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
